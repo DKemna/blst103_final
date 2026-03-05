@@ -11,6 +11,8 @@ Data sources:
 - Census tract boundaries: Census Bureau TIGER/Line Cartographic Boundaries
 """
 
+import matplotlib
+matplotlib.use('Agg')
 import geopandas as gpd
 import pandas as pd
 import numpy as np
@@ -347,19 +349,11 @@ if len(a_le) > 1 and len(d_le) > 1:
 print("=" * 65)
 
 
-# ─── 7. Visualization ───────────────────────────────────────────────────────
+# ─── 7. Visualization (separate images) ─────────────────────────────────────
 print("\nGenerating visualizations...")
 
-fig, axes = plt.subplots(2, 2, figsize=(18, 16))
-fig.suptitle(
-    "HOLC Redlining (1930s) and Current Life Expectancy in Atlanta",
-    fontsize=18,
-    fontweight="bold",
-    y=0.98,
-)
-
-# --- Panel 1: Scatter – weighted grade score vs life expectancy ---
-ax1 = axes[0, 0]
+# --- Plot 1: Scatter – weighted grade score vs life expectancy ---
+fig1, ax1 = plt.subplots(figsize=(10, 8))
 colors = [COLOR_MAP[g] for g in analysis["dominant_grade"]]
 ax1.scatter(
     analysis["weighted_grade_score"],
@@ -381,14 +375,21 @@ ax1.set_xlabel(
 )
 ax1.set_ylabel("Life Expectancy (years)", fontsize=11)
 ax1.set_title(
-    f"Weighted HOLC Score vs Life Expectancy\nr={r:.3f}, p={p:.4f}", fontsize=13
+    f"HOLC Score vs Life Expectancy in Atlanta\nr={r:.3f}, p={p:.4f}",
+    fontsize=13,
+    fontweight="bold",
 )
 ax1.set_xticks([1, 2, 3, 4])
 ax1.set_xticklabels(["1 (A)", "2 (B)", "3 (C)", "4 (D)"])
 ax1.grid(True, alpha=0.3)
+plt.tight_layout()
+out1 = os.path.join(script_dir, "holc_life_scatter.png")
+plt.savefig(out1, dpi=300, bbox_inches="tight")
+print(f"  Saved {out1}")
+plt.show()
 
-# --- Panel 2: Box plot – life expectancy by dominant grade ---
-ax2 = axes[0, 1]
+# --- Plot 2: Box plot – life expectancy by dominant grade ---
+fig2, ax2 = plt.subplots(figsize=(10, 8))
 grade_data = []
 grade_labels = []
 grade_colors = []
@@ -404,11 +405,20 @@ for patch, color in zip(bp["boxes"], grade_colors):
     patch.set_facecolor(color)
     patch.set_alpha(0.7)
 ax2.set_ylabel("Life Expectancy (years)", fontsize=11)
-ax2.set_title("Life Expectancy by Dominant HOLC Grade", fontsize=13)
+ax2.set_title(
+    "Life Expectancy by Dominant HOLC Grade – Atlanta",
+    fontsize=13,
+    fontweight="bold",
+)
 ax2.grid(True, alpha=0.3, axis="y")
+plt.tight_layout()
+out2 = os.path.join(script_dir, "holc_life_boxplot.png")
+plt.savefig(out2, dpi=300, bbox_inches="tight")
+print(f"  Saved {out2}")
+plt.show()
 
-# --- Panel 3: Scatter – redlined fraction vs life expectancy ---
-ax3 = axes[1, 0]
+# --- Plot 3: Scatter – redlined fraction vs life expectancy ---
+fig3, ax3 = plt.subplots(figsize=(10, 8))
 ax3.scatter(
     analysis["redlined_fraction"] * 100,
     analysis["life_expectancy"],
@@ -426,12 +436,19 @@ ax3.plot(x_line2, slope2 * x_line2 + intercept2, "k--", linewidth=2, alpha=0.7)
 ax3.set_xlabel("% of Census Tract Redlined (Grade D)", fontsize=11)
 ax3.set_ylabel("Life Expectancy (years)", fontsize=11)
 ax3.set_title(
-    f"Redlined Fraction vs Life Expectancy\nr={r2:.3f}, p={p2:.4f}", fontsize=13
+    f"Redlined Fraction vs Life Expectancy in Atlanta\nr={r2:.3f}, p={p2:.4f}",
+    fontsize=13,
+    fontweight="bold",
 )
 ax3.grid(True, alpha=0.3)
+plt.tight_layout()
+out3 = os.path.join(script_dir, "holc_life_redlined_scatter.png")
+plt.savefig(out3, dpi=300, bbox_inches="tight")
+print(f"  Saved {out3}")
+plt.show()
 
-# --- Panel 4: Choropleth map – life expectancy with HOLC overlay ---
-ax4 = axes[1, 1]
+# --- Plot 4: Choropleth map – life expectancy with HOLC overlay ---
+fig4, ax4 = plt.subplots(figsize=(12, 10))
 analysis_geo = analysis.copy()
 analysis_geo = analysis_geo.to_crs(epsg=3857)
 analysis_geo.plot(
@@ -452,7 +469,9 @@ for grade in ["D", "C", "B", "A"]:
 
 ax4.set_axis_off()
 ax4.set_title(
-    "Life Expectancy Map with HOLC Zone Boundaries", fontsize=13
+    "Life Expectancy Map with HOLC Zone Boundaries – Atlanta",
+    fontsize=13,
+    fontweight="bold",
 )
 
 legend_elements = [
@@ -460,12 +479,10 @@ legend_elements = [
     for g, c in COLOR_MAP.items()
 ]
 ax4.legend(handles=legend_elements, loc="lower left", fontsize=9)
-
-plt.tight_layout(rect=[0, 0, 1, 0.96])
-
-output_path = os.path.join(script_dir, "holc_life_expectancy_analysis.png")
-plt.savefig(output_path, dpi=300, bbox_inches="tight")
-print(f"  Saved figure to {output_path}")
+plt.tight_layout()
+out4 = os.path.join(script_dir, "holc_life_choropleth.png")
+plt.savefig(out4, dpi=300, bbox_inches="tight")
+print(f"  Saved {out4}")
 plt.show()
 
 print("\nDone!")

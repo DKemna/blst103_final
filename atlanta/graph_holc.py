@@ -8,6 +8,8 @@ Data source:
   https://dsl.richmond.edu/panorama/redlining/
 """
 
+import matplotlib
+matplotlib.use('Agg')
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch

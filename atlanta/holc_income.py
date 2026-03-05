@@ -11,6 +11,8 @@ Data sources:
 - Census tract boundaries: Census Bureau TIGER/Line Cartographic Boundaries
 """
 
+import matplotlib
+matplotlib.use('Agg')
 import geopandas as gpd
 import pandas as pd
 import numpy as np
@@ -366,19 +368,11 @@ if len(a_income) > 1 and len(d_income) > 1:
 print("=" * 70)
 
 
-# ─── 7. Visualization ───────────────────────────────────────────────────────
+# ─── 7. Visualization (separate images) ─────────────────────────────────────
 print("\nGenerating visualizations...")
 
-fig, axes = plt.subplots(2, 2, figsize=(18, 16))
-fig.suptitle(
-    "HOLC Redlining (1930s) and Current Income Levels in Atlanta",
-    fontsize=18,
-    fontweight="bold",
-    y=0.98,
-)
-
-# --- Panel 1: Scatter – weighted grade score vs per capita income ---
-ax1 = axes[0, 0]
+# --- Plot 1: Scatter – weighted grade score vs per capita income ---
+fig1, ax1 = plt.subplots(figsize=(10, 8))
 colors = [COLOR_MAP[g] for g in analysis["dominant_grade"]]
 ax1.scatter(
     analysis["weighted_grade_score"],
@@ -390,7 +384,6 @@ ax1.scatter(
     zorder=5,
 )
 
-# Add regression line
 slope, intercept, r, p, se = stats.linregress(
     analysis["weighted_grade_score"], analysis["per_capita_income"] / 1000
 )
@@ -401,15 +394,21 @@ ax1.set_xlabel(
 )
 ax1.set_ylabel("Per Capita Income ($K)", fontsize=11)
 ax1.set_title(
-    f"Weighted HOLC Score vs Per Capita Income\nr={r:.3f}, p={p:.4f}",
+    f"HOLC Redlining vs Per Capita Income in Atlanta\nr={r:.3f}, p={p:.4f}",
     fontsize=13,
+    fontweight="bold",
 )
 ax1.set_xticks([1, 2, 3, 4])
 ax1.set_xticklabels(["1 (A)", "2 (B)", "3 (C)", "4 (D)"])
 ax1.grid(True, alpha=0.3)
+plt.tight_layout()
+out1 = os.path.join(script_dir, "holc_income_scatter.png")
+plt.savefig(out1, dpi=300, bbox_inches="tight")
+print(f"  Saved {out1}")
+plt.show()
 
-# --- Panel 2: Box plot – income by dominant grade ---
-ax2 = axes[0, 1]
+# --- Plot 2: Box plot – income by dominant grade ---
+fig2, ax2 = plt.subplots(figsize=(10, 8))
 grade_data = []
 grade_labels = []
 grade_colors = []
@@ -425,11 +424,20 @@ for patch, color in zip(bp["boxes"], grade_colors):
     patch.set_facecolor(color)
     patch.set_alpha(0.7)
 ax2.set_ylabel("Per Capita Income ($K)", fontsize=11)
-ax2.set_title("Income Distribution by Dominant HOLC Grade", fontsize=13)
+ax2.set_title(
+    "Income Distribution by Dominant HOLC Grade – Atlanta",
+    fontsize=13,
+    fontweight="bold",
+)
 ax2.grid(True, alpha=0.3, axis="y")
+plt.tight_layout()
+out2 = os.path.join(script_dir, "holc_income_boxplot.png")
+plt.savefig(out2, dpi=300, bbox_inches="tight")
+print(f"  Saved {out2}")
+plt.show()
 
-# --- Panel 3: Scatter – weighted HOLC score vs poverty rate ---
-ax3 = axes[1, 0]
+# --- Plot 3: Scatter – weighted HOLC score vs poverty rate ---
+fig3, ax3 = plt.subplots(figsize=(10, 8))
 pov_plot = analysis.dropna(subset=["poverty_rate"])
 pov_colors = [COLOR_MAP[g] for g in pov_plot["dominant_grade"]]
 ax3.scatter(
@@ -451,15 +459,21 @@ ax3.set_xlabel(
 )
 ax3.set_ylabel("Poverty Rate (%)", fontsize=11)
 ax3.set_title(
-    f"Weighted HOLC Score vs Poverty Rate\nr={r3:.3f}, p={p3:.6f}",
+    f"HOLC Redlining vs Poverty Rate in Atlanta\nr={r3:.3f}, p={p3:.6f}",
     fontsize=13,
+    fontweight="bold",
 )
 ax3.set_xticks([1, 2, 3, 4])
 ax3.set_xticklabels(["1 (A)", "2 (B)", "3 (C)", "4 (D)"])
 ax3.grid(True, alpha=0.3)
+plt.tight_layout()
+out3 = os.path.join(script_dir, "holc_income_poverty_scatter.png")
+plt.savefig(out3, dpi=300, bbox_inches="tight")
+print(f"  Saved {out3}")
+plt.show()
 
-# --- Panel 4: Choropleth map – income with HOLC overlay ---
-ax4 = axes[1, 1]
+# --- Plot 4: Choropleth map – income with HOLC overlay ---
+fig4, ax4 = plt.subplots(figsize=(12, 10))
 analysis_geo = analysis.copy()
 analysis_geo = analysis_geo.to_crs(epsg=3857)
 analysis_geo.plot(
@@ -477,26 +491,27 @@ analysis_geo.plot(
     },
 )
 
-# Overlay HOLC boundaries
 holc_plot = holc.to_crs(epsg=3857)
 for grade in ["D", "C", "B", "A"]:
     subset = holc_plot[holc_plot["grade"] == grade]
     subset.boundary.plot(ax=ax4, color=COLOR_MAP[grade], linewidth=0.4, alpha=0.5)
 
 ax4.set_axis_off()
-ax4.set_title("Per Capita Income Map with HOLC Zone Boundaries", fontsize=13)
+ax4.set_title(
+    "Per Capita Income Map with HOLC Zone Boundaries – Atlanta",
+    fontsize=13,
+    fontweight="bold",
+)
 
 legend_elements = [
     Patch(facecolor=c, edgecolor="black", label=f"HOLC Grade {g}")
     for g, c in COLOR_MAP.items()
 ]
 ax4.legend(handles=legend_elements, loc="lower left", fontsize=9)
-
-plt.tight_layout(rect=[0, 0, 1, 0.96])
-
-output_path = os.path.join(script_dir, "holc_income_analysis.png")
-plt.savefig(output_path, dpi=300, bbox_inches="tight")
-print(f"  Saved figure to {output_path}")
+plt.tight_layout()
+out4 = os.path.join(script_dir, "holc_income_choropleth.png")
+plt.savefig(out4, dpi=300, bbox_inches="tight")
+print(f"  Saved {out4}")
 plt.show()
 
 print("\nDone!")
